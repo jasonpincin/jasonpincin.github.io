@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html><head><title>name your javascript functions | Jason Pincin</title><link rel="stylesheet" href="http://yandex.st/highlightjs/8.0/styles/default.min.css"><link rel="stylesheet" href="/site.css"></head><body><div id="links"> <ul><li><a href="https://jason.pincin.com/">blog</a></li><li><a href="https://github.com/jasonpincin">github</a></li><li><a href="https://twitter.com/jasonpincin">@jasonpincin</a></li></ul></div><div id="header"> <h1>name your javascript functions</h1><sub>published by Jason Pincin on 2016-09-18 </sub></div><div id="main"><article id="article"><div><p>For the sake of your future self who's debugging the code you're writing today, and for all those who depend upon any code you publish to NPM... name your functions. Please. </p>
+<p>Unfortunately, the benefits of naming your functions are not immediately apparent; and worse yet, the language itself encourages this namelessness with features such as arrow functions.  I'm as guilty as the next person, having a substantial amount of code on GitHub and NPM with nameless functions, wanting for identity. It's a lesson that, like so many others in this field, I had to learn the hard way: by having to troubleshoot my aweful code in a failing production setting.  </p>
+<p>Before I get into why you should be naming each and every function, lets look at some examples of what a nameless (aka anonymous) function looks like in some typical Javascript code:</p>
+<pre><code class="lang-javascript">request(<span class="hljs-string">'http://my-service.com/'</span>, (err, res, body) =&gt; {
+  <span class="hljs-comment">// if I only had a name...</span>
+})
+</code></pre>
+<pre><code class="lang-javascript">server.on(<span class="hljs-string">'ready'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+  <span class="hljs-comment">// a function has no name</span>
+})
+</code></pre>
+<p>Corny references to The Wizard of Oz and Game of Thrones aside, the above examples should look pretty familiar. I've done it. Chances are you've done it. It's concise, sleek, and all well and good until one wants to know what's going on with a certain process in production that's not acting like any of the others. The alternative isn't so bad. Consider this:</p>
+<pre><code class="lang-javascript">server.on(<span class="hljs-string">'ready'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">onReady</span> (<span class="hljs-params"></span>) </span>{
+  <span class="hljs-comment">// They call me, onReady</span>
+})
+</code></pre>
+<p>It's a little more wordy, but worth it's increased line length in gold. Lets take a look at why.</p>
+<h2 id="stacktraces">stacktraces</h2>
+<p>Lets execute this code:</p>
+<pre><code class="lang-javascript">produceError(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">str</span>) </span>{
+  <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(str)
+})
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">produceError</span> (<span class="hljs-params">cb</span>) </span>{
+  cb(<span class="hljs-string">'boom'</span>);
+}
+</code></pre>
+<p>Upon executing this, we'll get a stacktrace because of the thrown error. The stacktrace will look like this:</p>
+<pre><code class="lang-stylus">Error: boom
+    at /some/dir/anon_cb<span class="hljs-class">.js</span>:<span class="hljs-number">2</span>:<span class="hljs-number">9</span>
+    at produceError (/some/dir/anon_cb<span class="hljs-class">.js</span>:<span class="hljs-number">7</span>:<span class="hljs-number">3</span>)
+    at Object.&lt;anonymous&gt; (/some/dir/anon_cb<span class="hljs-class">.js</span>:<span class="hljs-number">1</span>:<span class="hljs-number">63</span>)
+    at Module._compile (module<span class="hljs-class">.js</span>:<span class="hljs-number">556</span>:<span class="hljs-number">32</span>)
+    at Object<span class="hljs-class">.Module</span>._extensions.<span class="hljs-class">.js</span> (module<span class="hljs-class">.js</span>:<span class="hljs-number">565</span>:<span class="hljs-number">10</span>)
+    at Module<span class="hljs-class">.load</span> (module<span class="hljs-class">.js</span>:<span class="hljs-number">473</span>:<span class="hljs-number">32</span>)
+    at tryModuleLoad (module<span class="hljs-class">.js</span>:<span class="hljs-number">432</span>:<span class="hljs-number">12</span>)
+    at Function<span class="hljs-class">.Module</span>._load (module<span class="hljs-class">.js</span>:<span class="hljs-number">424</span>:<span class="hljs-number">3</span>)
+    at Module<span class="hljs-class">.runMain</span> (module<span class="hljs-class">.js</span>:<span class="hljs-number">590</span>:<span class="hljs-number">10</span>)
+    at run (bootstrap_node<span class="hljs-class">.js</span>:<span class="hljs-number">394</span>:<span class="hljs-number">7</span>)
+</code></pre><p>Lets focus on these two lines:</p>
+<pre><code class="lang-applescript">    <span class="hljs-keyword">at</span> /<span class="hljs-keyword">some</span>/dir/anon_cb.js:<span class="hljs-number">2</span>:<span class="hljs-number">9</span>
+    <span class="hljs-keyword">at</span> produceError (/<span class="hljs-keyword">some</span>/dir/anon_cb.js:<span class="hljs-number">7</span>:<span class="hljs-number">3</span>)
+</code></pre><p>Notice how we have a function name plus line number for <code>produceError</code>, but only a line number for the first line (which is the last call in the call stack)? This is because we supplied an anonymous callback function to <code>produceError</code>. If we change our code slightly, the stacktrace will change as well. Lets's change it to be:</p>
+<pre><code class="lang-javascript">produceError(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">after</span> (<span class="hljs-params">str</span>) </span>{
+  <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(str)
+})
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">produceError</span> (<span class="hljs-params">cb</span>) </span>{
+  cb(<span class="hljs-string">'boom'</span>);
+}
+</code></pre>
+<p>The two lines in question change to:</p>
+<pre><code class="lang-applescript">    <span class="hljs-keyword">at</span> <span class="hljs-keyword">after</span> (/<span class="hljs-keyword">some</span>/dir/anon_cb.js:<span class="hljs-number">2</span>:<span class="hljs-number">9</span>)
+    <span class="hljs-keyword">at</span> produceError (/<span class="hljs-keyword">some</span>/dir/anon_cb.js:<span class="hljs-number">7</span>:<span class="hljs-number">3</span>)
+</code></pre><p>Just like that, we have some additional context in our stacktrace! You might be thinking, is it really a big deal? Even without the function name, we have a line number. That may be true for small modules in a vacuum; however, while troubleshooting, any context you can give yourself (or others) could be beneficial. If you're working on small modules that may become parts of larger applications, naming your functions in ways that provide meaning and context may just save your users some precious time. </p>
+<p>What about arrow functions? They're stranger yet. Lets change our code to this (keeping the <code>produceError</code> function the same as above):</p>
+<pre><code class="lang-javascript">produceError((str) =&gt; {
+  <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(str)
+})
+</code></pre>
+<p>The two lines of the stcktrace we're narrowed in on become:</p>
+<pre><code class="lang-applescript">    <span class="hljs-keyword">at</span> produceError (/<span class="hljs-keyword">some</span>/dir/arrow_cb.js:<span class="hljs-number">2</span>:<span class="hljs-number">9</span>)
+    <span class="hljs-keyword">at</span> produceError (/<span class="hljs-keyword">some</span>/dir/arrow_cb.js:<span class="hljs-number">7</span>:<span class="hljs-number">3</span>)
+</code></pre><p>This is possibly worse than no context... it's sort of misleading. Horrible. </p>
+<h2 id="inferred-names">inferred names</h2>
+<p>The experienced Javascripter may be waving their hands right about now, yelling "what about inferred names"? Fair enough, lets talk about those. Here's some example code that will lead to an inferred function name:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">const</span> after = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">str</span>) </span>{
+  <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(str)
+}
+
+produceError(after)
+</code></pre>
+<p>Here, we technically have an anonymous function assigned to a variable called <code class="lang-applescript"><span class="hljs-keyword">after</span></code>, and we use that as our callback. V8 is smart enough to give us a stack trace that looks like this:</p>
+<pre><code class="lang-applescript">    <span class="hljs-keyword">at</span> <span class="hljs-keyword">after</span> (/<span class="hljs-keyword">some</span>/dir/inferred_arrow_cb.js:<span class="hljs-number">2</span>:<span class="hljs-number">9</span>)
+    <span class="hljs-keyword">at</span> produceError (/<span class="hljs-keyword">some</span>/dir/inferred_arrow_cb.js:<span class="hljs-number">9</span>:<span class="hljs-number">3</span>)
+</code></pre><p>Here, for the purposes of this output, the inferred name is being treated as the actual name. We'll see some examples later where it's clear that there is a distinction between the two, but for now it's the same for all intents and purposes. Of course, one limitation of this approach, is you have to define the callback prior to using it. You cannot declare the callback in-line as you call the <code>produceError</code> function. You also cannot take advantage of hoisting, a feature some may consider vile, but I'll go into depth on how to use to your advantage in a subsequent article. </p>
+<p>For now, lets table this and come back to it. It's worth noting, that if you used an arrow function in the above example, the stacktrace would still look identical.</p>
+<h2 id="flamegraphs">flamegraphs</h2>
+<p>Another extremely useful tool we have for peering into production processes, is <code>dtrace</code>. I'm using this tool on the SmartOS platform. It exists on other platforms (as do other tools that offer some of it's capabilities, but I will not cover those here). I'm not a <code>dtrace</code> ninja (though I strive to be), but one thing I've used it for extensively, is creating flamegraphs of my running node processes, to get a very clear picture of where my processes are spending their time. </p>
+<p>To demonstrate how function names impact our flamegraphs, lets consider a new piece of code, in which I'm constructing a callstack so that our flamegraphs have some substance to them. These are very simple graphs; production graphs in real applications will have a lot more going on. Here's oru starting code:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>().stack
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">main</span> (<span class="hljs-params"></span>) </span>{ func1() }
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">func1</span> (<span class="hljs-params"></span>) </span>{ 
+  ;(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    ;(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+      <span class="hljs-keyword">for</span> (;;) {}
+    })()
+  })()
+}
+
+main()
+</code></pre>
+<p>I know. This code is ugly. The endless loop is there so we have time to get a good sample from <code>dtrace</code>, and we're doing two auto-executing anonymous functions so we can show the impact of... anonymous functions.  I run this little gem of a program like so:</p>
+<pre><code class="lang-bash">node loop-anon.js &amp;
+</code></pre>
+<p>Which spits our a PID that I use in this next set of commands to produce some stacks:</p>
+<pre><code class="lang-bash">~ $ dtrace -n <span class="hljs-string">'profile-97/pid == $PID &amp;&amp; arg1/{ @[jstack(150, 8000)] = count(); } tick-60s { exit(0); }'</span> &gt; anon.out
+
+~ $ c++filt &lt; anon.out &gt; anon-demangled.out
+</code></pre>
+<p>Finally, lets convert this into a flamegraph we can look at. The first time, you'll need to install the awesome <code>stackvis</code> tool:</p>
+<pre><code class="lang-bash">~ $ npm i -g stackvis
+
+~ $ stackvis dtrace flamegraph-svg &lt; anon-demangled.out &gt; anon-stacks.svg
+</code></pre>
+<p>Which gives us this graph:</p>
+<p><img src="../images/anon-flamegraph-small.png" alt="anonymous function flame graph"></p>
+<p>And there we have it; two anonymous functions at the top of our flame - absolutely useless. We can see our <code>main</code> and <code class="lang-gcode">fu<span class="hljs-label">nc1</span></code> functions... because they're named functions. So let's tweak our program slightly and see if the flame graph improves:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>().stack
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">main</span> (<span class="hljs-params"></span>) </span>{ func1() }
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">func1</span> (<span class="hljs-params"></span>) </span>{ 
+  ;(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">func2</span> (<span class="hljs-params"></span>) </span>{
+    ;(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">endlessLoop</span> (<span class="hljs-params"></span>) </span>{
+      <span class="hljs-keyword">for</span> (;;) {}
+    })()
+  })()
+}
+
+main()
+</code></pre>
+<p>And here's the resulting flamegraph (using a set of commands to generate it identical to the commands above, only the PID changes):</p>
+<p><img src="../images/named-flamegraph-small.png" alt="named function flame graph"></p>
+<p>Isn't that nice? The top of our flame now has names. This information could potentially guide us to a bug that only showed up in production, or a performance regression, or any number of things. The time savings could be very substantial. Even the chance of such a thing should warrant whatever inconvenience you may think naming your functions imposes on you. These days I cringe when someone argues for semi-colons, something that really is stylistic in nature, and then omits function names, which will actually affect production observability. Don't be that. </p>
+<p>For completeness here, lets look at a flamegraph for code that uses inferred function names. Here's the code:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>().stack
+
+<span class="hljs-keyword">const</span> func2 = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+  endlessLoop()
+}
+
+<span class="hljs-keyword">const</span> endlessLoop = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">for</span> (;;) {}
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">main</span> (<span class="hljs-params"></span>) </span>{ func1() }
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">func1</span> (<span class="hljs-params"></span>) </span>{ 
+  func2()
+}
+
+main()
+</code></pre>
+<p>And here's the resulting flamegraph:</p>
+<p><img src="../images/inferred-flamegraph-small.png" alt="inferred function flame graph"></p>
+<p>You can see the distinction between the actual function name and it's inferred name now. Notice the <code class="lang-lisp"><span class="hljs-list">(<span class="hljs-keyword">anon</span>)</span> as endlessLoop</code>; this is telling you it's an anonymous function who's inferred name is <code>endlessLoop</code>. Not quite as neat and tidy as the named functions below in the graph, but it gets the job done. Of course it comes with the same limitations discussed above. </p>
+<h2 id="mdb">mdb</h2>
+<p>Lastly, I'd like to touch on <code>mdb</code>. This is another tool I've used (on SmartOS) to troubleshoot, observe, and perform postmortem debugging. I'm not going to go into how to use <code>mdb</code> here (here's a <a href="http://dtrace.org/blogs/dap/2012/01/13/playing-with-nodev8-postmortem-debugging/">great article</a> on the topic), but I want to show the output of <code>mdb</code> for functions with varying levels of identities. Following is some example output of <code class="lang-css"><span class="hljs-pseudo">::jsstack</span> <span class="hljs-tag">-vn0</span></code>:</p>
+<p>An anonymous function:</p>
+<pre><code class="lang-http"><span class="hljs-attribute">js</span>: <span class="hljs-string">    &lt;anonymous&gt; (as &lt;anon&gt;)</span>
+          <span class="hljs-attribute">file</span>: <span class="hljs-string">/some/dir/anon-loop.js</span>
+          <span class="hljs-attribute">posn</span>: <span class="hljs-string">line 18</span>
+</code></pre><p>A named function:</p>
+<pre><code class="lang-http"><span class="hljs-attribute">js</span>: <span class="hljs-string">    func2</span>
+          <span class="hljs-attribute">file</span>: <span class="hljs-string">/some/dir/anon-loop.js</span>
+          <span class="hljs-attribute">posn</span>: <span class="hljs-string">line 16</span>
+          <span class="hljs-attribute">this</span>: <span class="hljs-string">b43772d3 (&lt;unknown&gt;)</span>
+</code></pre><p>For functions with inferred names, the <code class="lang-clojure"><span class="hljs-list">(<span class="hljs-keyword">as</span> &lt;anon&gt;)</span></code>, in the first example, would be replaced with the inferred function name, so for example:</p>
+<pre><code class="lang-groovy"><span class="hljs-string">js:</span>     &lt;anonymous&gt; (<span class="hljs-keyword">as</span> EventEmitter.emit)
+</code></pre><h2 id="summary">summary</h2>
+<p>When I was getting started in Javascript, I saw it mentioned here and there that you "should name your functions". There was never any explanation as to why, other than "it will help you when debugging". Great, but how? Hopefully this article gives you a head start in understanding the how and why. </p>
+<p>These days, I'm very careful about the modules from NPM that I depend on in my code, and one of the biggest factors is - if this module breaks, is it written in a way that will help me understand how it broke? Commit to making your code debuggable and observale. There's obviously more to these things than just naming your functions, but it's a great start, so go forth and bring names to the nameless ones!</p>
+</div></article></div><script src="http://localhost:35729/livereload.js"></script></body></html>
