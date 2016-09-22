@@ -146,19 +146,18 @@ main()
 <p><img src="../images/inferred-flamegraph-small.png" alt="inferred function flame graph"></p>
 <p>You can see the distinction between the actual function name and it's inferred name now. Notice the <code class="lang-lisp"><span class="hljs-list">(<span class="hljs-keyword">anon</span>)</span> as endlessLoop</code>; this is telling you it's an anonymous function who's inferred name is <code>endlessLoop</code>. Not quite as neat and tidy as the named functions below in the graph, but it gets the job done. Of course it comes with the same limitations discussed above. </p>
 <h2 id="mdb">mdb</h2>
-<p>Lastly, I'd like to touch on <code>mdb</code>. This is another tool I've used (on SmartOS) to troubleshoot, observe, and perform postmortem debugging. I'm not going to go into how to use <code>mdb</code> here (here's a <a href="http://dtrace.org/blogs/dap/2012/01/13/playing-with-nodev8-postmortem-debugging/">great article</a> on the topic), but I want to show the output of <code>mdb</code> for functions with varying levels of identities. Following is some example output of <code class="lang-css"><span class="hljs-pseudo">::jsstack</span> <span class="hljs-tag">-vn0</span></code>:</p>
+<p>Lastly, I'd like to touch on <code>mdb</code>. This is another tool used (on SmartOS) to troubleshoot, observe, and perform postmortem debugging. I'm not going to go into how to use <code>mdb</code> here (here's a <a href="http://dtrace.org/blogs/dap/2012/01/13/playing-with-nodev8-postmortem-debugging/">great article</a> on the topic), but I want to show the output of <code>mdb</code> for functions with varying levels of identities. Following is some example output of <code class="lang-css"><span class="hljs-pseudo">::jsstack</span> <span class="hljs-tag">-vn0</span></code>:</p>
 <p>An anonymous function:</p>
 <pre><code class="lang-http"><span class="hljs-attribute">js</span>: <span class="hljs-string">    &lt;anonymous&gt; (as &lt;anon&gt;)</span>
           <span class="hljs-attribute">file</span>: <span class="hljs-string">/some/dir/anon-loop.js</span>
           <span class="hljs-attribute">posn</span>: <span class="hljs-string">line 18</span>
 </code></pre><p>A named function:</p>
 <pre><code class="lang-http"><span class="hljs-attribute">js</span>: <span class="hljs-string">    func2</span>
-          <span class="hljs-attribute">file</span>: <span class="hljs-string">/some/dir/anon-loop.js</span>
+          <span class="hljs-attribute">file</span>: <span class="hljs-string">/some/dir/named-loop.js</span>
           <span class="hljs-attribute">posn</span>: <span class="hljs-string">line 16</span>
           <span class="hljs-attribute">this</span>: <span class="hljs-string">b43772d3 (&lt;unknown&gt;)</span>
 </code></pre><p>For functions with inferred names, the <code class="lang-clojure"><span class="hljs-list">(<span class="hljs-keyword">as</span> &lt;anon&gt;)</span></code>, in the first example, would be replaced with the inferred function name, so for example:</p>
 <pre><code class="lang-groovy"><span class="hljs-string">js:</span>     &lt;anonymous&gt; (<span class="hljs-keyword">as</span> EventEmitter.emit)
-</code></pre><h2 id="summary">summary</h2>
-<p>When I was getting started in Javascript, I saw it mentioned here and there that you "should name your functions". There was never any explanation as to why, other than "it will help you when debugging". Great, but how? Hopefully this article gives you a head start in understanding the how and why. </p>
-<p>These days, I'm very careful about the modules from NPM that I depend on in my code, and one of the biggest factors is - if this module breaks, is it written in a way that will help me understand how it broke? Commit to making your code debuggable and observable. There's obviously more to these things than just naming your functions, but it's a great start, so go forth and bring names to the nameless ones!</p>
+</code></pre><h2 id="conclusion">conclusion</h2>
+<p>These days, I'm very careful about the modules from NPM that I depend on in my code, and one of the biggest factors is - if this module breaks, is it written in a way that will help me understand how it broke? Commit to making your code debuggable and observable. There's obviously more to these things than just naming your functions, but it's a great start, so go forth and bring names to the nameless!</p>
 </div></article></div><script src="http://localhost:35729/livereload.js"></script></body></html>
